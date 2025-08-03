@@ -8,14 +8,13 @@
  */
 
 const mineflayer = require('mineflayer')
-const { pathfinder, Movements } = require('mineflayer-pathfinder')
-const { GoalNear } = require('mineflayer-pathfinder').goals
+const { pathfinder, Movements } = require('../index.js')
+const { GoalNear } = require('../index.js').goals
 
 const bot = mineflayer.createBot({
-  host: process.argv[2],
-  port: parseInt(process.argv[3]),
-  username: process.argv[4] ? process.argv[4] : 'movementsbot',
-  password: process.argv[5]
+  host: 'localhost',
+  port: 25565,
+  username: 'bot1'
 })
 
 bot.loadPlugin(pathfinder)
@@ -29,17 +28,15 @@ bot.once('spawn', () => {
 
   // To get started create a instance of the Movements class
   const customMoves = new Movements(bot)
-  // To make changes to the behaviour, customize the properties of the instance
-  customMoves.canDig = false
-  customMoves.allow1by1towers = false
-  customMoves.scafoldingBlocks.push(bot.registry.itemsByName.stone.id)
-  // Thing to note scaffoldingBlocks are an array while other namespaces are usually sets
-  customMoves.blocksToAvoid.add(bot.registry.blocksByName.carrot.id)
+  customMoves.allowFreeMotion = true
+  customMoves.allowSprinting = true
+  customMoves.allowParkour = true
 
   // To initialize the new movements use the .setMovements method.
   bot.pathfinder.setMovements(customMoves)
 
-  bot.on('chat', function (username, message) {
+  bot.on('messagestr', function (str) {
+    const [, username, message] = str.match(/^<([^>]+)> (.+)$/) || []
     if (username === bot.username) return
 
     if (message === 'come') {

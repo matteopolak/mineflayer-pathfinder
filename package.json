@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "minecraft-wrap": "^1.2.1",
-    "mineflayer": "^4.3.0",
+    "mineflayer": "^4.31.0",
     "mineflayer-pathfinder": "file:./",
     "mocha": "^11.0.1",
     "prismarine-schematic": "^1.2.3",

@@ -12,7 +12,7 @@ const Physics = require('./lib/physics')
 const nbt = require('prismarine-nbt')
 const interactableBlocks = require('./lib/interactable.json')
 
-function inject (bot) {
+function inject(bot) {
   const waterType = bot.registry.blocksByName.water.id
   const ladderId = bot.registry.blocksByName.ladder.id
   const vineId = bot.registry.blocksByName.vine.id
@@ -37,7 +37,7 @@ function inject (bot) {
   bot.pathfinder = {}
 
   bot.pathfinder.thinkTimeout = 5000 // ms
-  bot.pathfinder.tickTimeout = 40 // ms, amount of thinking per tick (max 50 ms)
+  bot.pathfinder.tickTimeout = 20 // ms, amount of thinking per tick (max 50 ms)
   bot.pathfinder.searchRadius = -1 // in blocks, limits of the search area, -1: don't limit the search
   bot.pathfinder.enablePathShortcut = false // disabled by default as it can cause bugs in specific configurations
   bot.pathfinder.LOSWhenPlacingBlocks = true
@@ -67,7 +67,7 @@ function inject (bot) {
     return result
   }
 
-  bot.pathfinder.getPathFromTo = function * (movements, startPos, goal, options = {}) {
+  bot.pathfinder.getPathFromTo = function* (movements, startPos, goal, options = {}) {
     const optimizePath = options.optimizePath ?? true
     const resetEntityIntersects = options.resetEntityIntersects ?? true
     const timeout = options.timeout ?? bot.pathfinder.thinkTimeout
@@ -103,24 +103,24 @@ function inject (bot) {
 
   Object.defineProperties(bot.pathfinder, {
     goal: {
-      get () {
+      get() {
         return stateGoal
       }
     },
     movements: {
-      get () {
+      get() {
         return stateMovements
       }
     }
   })
 
-  function detectDiggingStopped () {
+  function detectDiggingStopped() {
     digging = false
     bot.removeAllListeners('diggingAborted', detectDiggingStopped)
     bot.removeAllListeners('diggingCompleted', detectDiggingStopped)
   }
 
-  function resetPath (reason, clearStates = true) {
+  function resetPath(reason, clearStates = true) {
     if (!stopPathing && path.length > 0) bot.emit('path_reset', reason)
     path = []
     if (digging) {
@@ -165,7 +165,7 @@ function inject (bot) {
 
   bot.on('physicsTick', monitorMovement)
 
-  function postProcessPath (path) {
+  function postProcessPath(path) {
     for (let i = 0; i < path.length; i++) {
       const curPoint = path[i]
       if (curPoint.toBreak.length > 0 || curPoint.toPlace.length > 0) break
@@ -204,7 +204,7 @@ function inject (bot) {
     return newPath
   }
 
-  function pathFromPlayer (path) {
+  function pathFromPlayer(path) {
     if (path.length === 0) return
     let minI = 0
     let minDistance = 1000
@@ -234,7 +234,7 @@ function inject (bot) {
     path.splice(0, minI)
   }
 
-  function isPositionNearPath (pos, path) {
+  function isPositionNearPath(pos, path) {
     let prevNode = null
     for (const node of path) {
       let comparisonPoint = null
@@ -282,7 +282,7 @@ function inject (bot) {
     return false
   }
 
-  function closestPointOnLineSegment (point, segmentStart, segmentEnd) {
+  function closestPointOnLineSegment(point, segmentStart, segmentEnd) {
     const segmentLength = segmentEnd.minus(segmentStart).norm()
 
     if (segmentLength === 0) {
@@ -301,7 +301,7 @@ function inject (bot) {
 
   // Return the average x/z position of the highest standing positions
   // in the block.
-  function getPositionOnTopOf (block) {
+  function getPositionOnTopOf(block) {
     if (!block || block.shapes.length === 0) return null
     const p = new Vec3(0.5, 0, 0.5)
     let n = 1
@@ -327,7 +327,7 @@ function inject (bot) {
    * Stop the bot's movement and recenter to the center off the block when the bot's hitbox is partially beyond the
    * current blocks dimensions.
    */
-  function fullStop () {
+  function fullStop() {
     bot.clearControlStates()
 
     // Force horizontal velocity to 0 (otherwise inertia can move us too far)
@@ -344,10 +344,10 @@ function inject (bot) {
     if (Math.abs(bot.entity.position.z - blockZ) > 0.2) { bot.entity.position.z = blockZ }
   }
 
-  function moveToEdge (refBlock, edge) {
+  function moveToEdge(refBlock, edge) {
     // If allowed turn instantly should maybe be a bot option
     const allowInstantTurn = false
-    function getViewVector (pitch, yaw) {
+    function getViewVector(pitch, yaw) {
       const csPitch = Math.cos(pitch)
       const snPitch = Math.sin(pitch)
       const csYaw = Math.cos(yaw)
@@ -374,12 +374,12 @@ function inject (bot) {
     return true
   }
 
-  function moveToBlock (pos) {
+  function moveToBlock(pos) {
     // minDistanceSq = Min distance sqrt to the target pos were the bot is centered enough to place blocks around him
     const minDistanceSq = 0.2 * 0.2
     const targetPos = pos.clone().offset(0.5, 0, 0.5)
     if (bot.entity.position.distanceSquared(targetPos) > minDistanceSq) {
-      bot.lookAt(targetPos)
+      bot.lookAt(targetPos.offset(0, -1, 0))
       bot.setControlState('forward', true)
       return false
     }
@@ -387,7 +387,7 @@ function inject (bot) {
     return true
   }
 
-  function stop () {
+  function stop() {
     stopPathing = false
     stateGoal = null
     path = []
@@ -408,20 +408,21 @@ function inject (bot) {
       const cx = chunk.x >> 4
       const cz = chunk.z >> 4
       if (astarContext.visitedChunks.has(`${cx - 1},${cz}`) ||
-          astarContext.visitedChunks.has(`${cx},${cz - 1}`) ||
-          astarContext.visitedChunks.has(`${cx + 1},${cz}`) ||
-          astarContext.visitedChunks.has(`${cx},${cz + 1}`)) {
+        astarContext.visitedChunks.has(`${cx},${cz - 1}`) ||
+        astarContext.visitedChunks.has(`${cx + 1},${cz}`) ||
+        astarContext.visitedChunks.has(`${cx},${cz + 1}`)) {
         resetPath('chunk_loaded', false)
       }
     }
   })
 
-  function monitorMovement () {
+  function monitorMovement() {
     // Test freemotion
     if (stateMovements && stateMovements.allowFreeMotion && stateGoal && stateGoal.entity) {
       const target = stateGoal.entity
       if (physics.canStraightLine([target.position])) {
-        bot.lookAt(target.position.offset(0, 1.6, 0))
+        console.log('good to go');
+        bot.lookAt(target.position.offset(0, 1.2, 0))
 
         if (target.position.distanceSquared(bot.entity.position) > stateGoal.rangeSq) {
           bot.setControlState('forward', true)
@@ -503,7 +504,7 @@ function inject (bot) {
           digBlock()
         } else {
           bot.equip(tool, 'hand')
-            .catch(_ignoreError => {})
+            .catch(_ignoreError => { })
             .then(() => digBlock())
         }
       }
@@ -568,7 +569,7 @@ function inject (bot) {
                 lastNodeTime = performance.now()
               })
           })
-          .catch(_ignoreError => {})
+          .catch(_ignoreError => { })
       }
       return
     }
@@ -604,7 +605,7 @@ function inject (bot) {
       dz = nextPoint.z - p.z
     }
 
-    bot.look(Math.atan2(-dx, -dz), 0)
+    bot.look(Math.atan2(-dx, -dz), -0.3)
     bot.setControlState('forward', true)
     bot.setControlState('jump', false)
 
